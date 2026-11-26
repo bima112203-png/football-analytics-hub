@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     ENABLE_EMBEDDED_WORKER: bool = True
 
+    # Google Apps Script Spreadsheet Sync (opsional)
+    GSHEET_WEBAPP_URL: str = ""
+    GSHEET_SYNC_SECRET: str = ""
+
     NEXT_PUBLIC_API_URL: str = "http://localhost:8000"
 
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.main import app
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -18,6 +19,27 @@ SOURCE_HTML = ROOT_DIR / "backend" / "app" / "static" / "index.html"
 
 STATIC_FALLBACK_HELPER = """
     let STATIC_MODE = false;
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get("gsheet")) {
+      localStorage.setItem("fah_gsheet_url", urlParams.get("gsheet"));
+    }
+    const GSHEET_URL = localStorage.getItem("fah_gsheet_url") || "__GSHEET_WEBAPP_URL__";
+
+    async function fetchSheetOrLocal(key, localPath) {
+      if (GSHEET_URL) {
+        try {
+          const r = await origFetch(`${GSHEET_URL}?key=${encodeURIComponent(key)}`);
+          if (r.ok) {
+            const txt = await r.text();
+            if (txt && !txt.includes('"Key tidak ditemukan"')) {
+              return new Response(txt, { status: 200, headers: { "Content-Type": "application/json" } });
+            }
+          }
+        } catch {}
+      }
+      return origFetch(localPath);
+    }
+
     const origFetch = window.fetch.bind(window);
     window.fetch = async function(input, init) {
       const url = typeof input === "string" ? input : input.url;
@@ -39,13 +61,13 @@ STATIC_FALLBACK_HELPER = """
           else throw err;
         }
       }
-      // Static Netlify Snapshot Mode
+      // Static Netlify + Google Sheets Live Store Mode
       if (path.startsWith("/health")) {
-        return origFetch("./data/health.json");
+        return fetchSheetOrLocal("health", "./data/health.json");
       }
       if (path.startsWith("/matches?")) {
         const q = new URLSearchParams(path.split("?")[1] || "");
-        const r = await origFetch("./data/matches.json");
+        const r = await fetchSheetOrLocal("matches", "./data/matches.json");
         let list = await r.json();
         const lg = q.get("league");
         const df = q.get("date_from");
@@ -55,11 +77,11 @@ STATIC_FALLBACK_HELPER = """
       }
       if (path.startsWith("/matches/")) {
         const id = path.split("/")[2];
-        return origFetch(`./data/details/${id}.json`);
+        return fetchSheetOrLocal(`detail_${id}`, `./data/details/${id}.json`);
       }
       if (path.startsWith("/predict/")) {
         const id = Number(path.split("/")[2]);
-        const r = await origFetch("./data/matches.json");
+        const r = await fetchSheetOrLocal("matches", "./data/matches.json");
         const list = await r.json();
         const found = list.find(m => m.id === id);
         return new Response(JSON.stringify(found?.prediction || {}), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -67,10 +89,10 @@ STATIC_FALLBACK_HELPER = """
       if (path.startsWith("/standings")) {
         const q = new URLSearchParams(path.split("?")[1] || "");
         const lg = q.get("league") || "PL";
-        return origFetch(`./data/standings_${lg}.json`);
+        return fetchSheetOrLocal(`standings_${lg}`, `./data/standings_${lg}.json`);
       }
       if (path.startsWith("/history/accuracy")) {
-        return origFetch("./data/accuracy.json");
+        return fetchSheetOrLocal("accuracy", "./data/accuracy.json");
       }
       if (path === "/simulator/calculate" && init?.method === "POST") {
         const body = JSON.parse(init.body || "{}");
@@ -148,7 +170,8 @@ def build() -> Path:
     html = SOURCE_HTML.read_text(encoding="utf-8")
     marker = 'const API_BASE = (location.protocol === "file:") ? "http://localhost:8000" : "";'
     assert marker in html, "Marker API_BASE tidak ditemukan di index.html"
-    html = html.replace(marker, marker + "\n" + STATIC_FALLBACK_HELPER, 1)
+    helper = STATIC_FALLBACK_HELPER.replace("__GSHEET_WEBAPP_URL__", settings.GSHEET_WEBAPP_URL.strip())
+    html = html.replace(marker, marker + "\n" + helper, 1)
     # Jangan jalankan EventSource di mode statis Netlify (agar tidak ada console error 404 /events/stream)
     html = html.replace(
         "function connectSSE() {",
