@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: football-analytics-hub-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && python -m scripts.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATA_PROVIDER
+        value: fotmob
+      - key: DATABASE_URL
+        fromDatabase:
+          name: football-analytics-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: football-analytics-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+  - type: worker
+    name: football-analytics-hub-worker
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.worker
+    envVars:
+      - key: DATA_PROVIDER
+        value: fotmob
+      - key: DATABASE_URL
+        fromDatabase:
+          name: football-analytics-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: football-analytics-redis
+          property: connectionString
+
+  - type: redis
+    name: football-analytics-redis
+    ipAllowList: []
+
+databases:
+  - name: football-analytics-db
+    databaseName: football_analytics
+    user: fah_user

@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Football Analytics Hub — Platform Analisis Statistik Sepak Bola</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%232563eb'/><text x='16' y='21' font-size='13' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'>FAH</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-canvas: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-elevated: #f1f5f9;
+      --border-subtle: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.12);
+      --accent-contrast: #ffffff;
+      --form-win: #15803d;
+      --form-draw: #b45309;
+      --form-loss: #b91c1c;
+      --warn-bg: #fef3c7;
+      --warn-border: #d97706;
+      --warn-text: #78350f;
+    }
+
+    html.dark {
+      --bg-canvas: #0b0f17;
+      --bg-surface: #121823;
+      --bg-elevated: #1a2232;
+      --border-subtle: #243044;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.15);
+      --accent-contrast: #ffffff;
+      --form-win: #22c55e;
+      --form-draw: #f59e0b;
+      --form-loss: #ef4444;
+      --warn-bg: rgba(120, 53, 15, 0.25);
+      --warn-border: #b45309;
+      --warn-text: #fde68a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      margin: 0;
+      transition: background-color 180ms ease, color 180ms ease;
+    }
+
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+
+    .surface-box {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+    }
+
+    .elevated-box {
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+      border-radius: 6px;
+      transition: opacity 150ms ease;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+
+    .btn-ghost {
+      background-color: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      transition: background-color 150ms ease;
+    }
+    .btn-ghost:hover { background-color: var(--border-subtle); }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .skeleton-line {
+      background-color: var(--bg-elevated);
+      border-radius: 4px;
+      animation: pulse-sk 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse-sk {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    th.sticky-th {
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-elevated);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- Top Navigation -->
+  <header class="sticky top-0 z-30 border-b" style="background-color: var(--bg-surface); border-color: var(--border-subtle);">
+    <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div class="flex items-center gap-2.5">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-md font-bold text-xs tracking-tight" style="background-color: var(--accent); color: var(--accent-contrast);">FAH</span>
+        <div>
+          <div class="text-sm font-bold leading-tight tracking-tight">Football Analytics Hub</div>
+          <div class="text-[11px]" style="color: var(--text-muted);">Statistik &amp; Model Prediksi</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 overflow-x-auto">
+        <nav role="tablist" aria-label="Navigasi Utama" class="flex items-center gap-1">
+          <button role="tab" aria-selected="true" onclick="switchTab('dashboard')" id="tab-dashboard" class="px-3 py-1.5 text-xs font-semibold rounded-md transition">Pertandingan</button>
+          <button role="tab" aria-selected="false" onclick="switchTab('standings')" id="tab-standings" class="px-3 py-1.5 text-xs font-semibold rounded-md transition">Klasemen</button>
+          <button role="tab" aria-selected="false" onclick="switchTab('simulator')" id="tab-simulator" class="px-3 py-1.5 text-xs font-semibold rounded-md transition">Simulator (<span id="parlay-count" class="tabular-nums">0</span>)</button>
+          <button role="tab" aria-selected="false" onclick="switchTab('history')" id="tab-history" class="px-3 py-1.5 text-xs font-semibold rounded-md transition">Akurasi</button>
+          <button role="tab" aria-selected="false" onclick="switchTab('methodology')" id="tab-methodology" class="px-3 py-1.5 text-xs font-semibold rounded-md transition">Metodologi</button>
+          <button role="tab" aria-selected="false" onclick="switchTab('design-system')" id="tab-design-system" class="px-3 py-1.5 text-xs font-semibold rounded-md transition">Design System</button>
+        </nav>
+
+        <button onclick="toggleTheme()" id="btn-theme" aria-label="Ganti Tema Terang atau Gelap" class="btn-ghost p-2 inline-flex items-center justify-center" title="Ganti Tema Light/Dark">
+          <svg id="icon-theme" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-4 space-y-4">
+    <!-- Status & Freshness Bar -->
+    <div id="sync-status-bar" aria-live="polite" class="hidden rounded-md border px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2"></div>
+
+    <!-- VIEW 1: DASHBOARD (DENSE TABLE) -->
+    <section id="view-dashboard" class="space-y-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-lg font-bold tracking-tight">Jadwal Pertandingan &amp; Probabilitas</h1>
+          <p class="text-xs" style="color: var(--text-muted);">Hari ini hingga 7 hari ke depan (waktu dalam WIB) · Model Dixon-Coles + Elo</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="filter-league" aria-label="Filter Liga" onchange="loadMatches()" class="elevated-box px-2.5 py-1.5 text-xs font-medium">
+            <option value="">Semua Liga</option>
+            <option value="PL">Premier League (PL)</option>
+            <option value="PD">La Liga (PD)</option>
+            <option value="SA">Serie A (SA)</option>
+            <option value="BL1">Bundesliga (BL1)</option>
+          </select>
+          <input type="date" id="filter-date" aria-label="Filter Tanggal" onchange="loadMatches()" class="elevated-box px-2.5 py-1.5 text-xs font-medium tabular-nums" />
+          <button onclick="resetFilters()" class="btn-ghost px-2.5 py-1.5 text-xs font-medium">Reset</button>
+        </div>
+      </div>
+
+      <div id="matches-container" class="surface-box overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b text-[11px] uppercase tracking-wider" style="border-color: var(--border-subtle); color: var(--text-muted);">
+                <th class="sticky-th px-3 py-2.5 font-semibold">Waktu (WIB)</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold">Liga</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold">Pertandingan</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold">Distribusi 1 / X / 2</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Skor Model</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Keyakinan</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="matches-tbody" class="divide-y" style="border-color: var(--border-subtle);"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: KLASEMEN -->
+    <section id="view-standings" class="hidden space-y-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-lg font-bold tracking-tight">Klasemen &amp; Kekuatan Tim</h1>
+          <p class="text-xs" style="color: var(--text-muted);">Peringkat poin liga, selisih gol, rating Elo, dan tren form</p>
+        </div>
+        <select id="standings-league" aria-label="Pilih Liga Klasemen" onchange="loadStandings()" class="elevated-box px-2.5 py-1.5 text-xs font-medium">
+          <option value="PL">Premier League (PL)</option>
+          <option value="PD">La Liga (PD)</option>
+          <option value="SA">Serie A (SA)</option>
+          <option value="BL1">Bundesliga (BL1)</option>
+        </select>
+      </div>
+
+      <div class="surface-box overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b text-[11px] uppercase tracking-wider" style="border-color: var(--border-subtle); color: var(--text-muted);">
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right w-10">#</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold">Tim</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Main</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">M</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">S</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">K</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">GM:GK</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">SG</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Poin</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Elo</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold">Form</th>
+              </tr>
+            </thead>
+            <tbody id="standings-tbody" class="divide-y tabular-nums" style="border-color: var(--border-subtle);"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: DETAIL PERTANDINGAN -->
+    <section id="view-detail" class="hidden space-y-4">
+      <button onclick="switchTab('dashboard')" class="btn-ghost inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        Kembali ke Jadwal
+      </button>
+      <div id="detail-content" class="space-y-4"></div>
+    </section>
+
+    <!-- VIEW 4: SIMULATOR PARLAY -->
+    <section id="view-simulator" class="hidden space-y-4">
+      <div>
+        <h1 class="text-lg font-bold tracking-tight">Simulator Kombinasi Pertandingan (Edukasi)</h1>
+        <p class="text-xs" style="color: var(--text-muted);">Pilih 2 hingga 8 pasar untuk memodelkan probabilitas gabungan, korelasi, dan risiko statistik.</p>
+      </div>
+
+      <div class="rounded-md border px-3 py-2.5 text-xs leading-relaxed" style="background-color: var(--warn-bg); border-color: var(--warn-border); color: var(--warn-text);">
+        <strong>Disclaimer Simulator:</strong> Prediksi berbasis statistik dan tidak menjamin hasil. Aplikasi ini bukan ajakan untuk berjudi. Perjudian dilarang di Indonesia.
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-3">
+        <div class="lg:col-span-2 space-y-4">
+          <div class="surface-box p-4 space-y-3">
+            <div class="flex items-center justify-between border-b pb-2" style="border-color: var(--border-subtle);">
+              <h2 class="text-sm font-semibold">Pasar Terpilih (<span id="sim-leg-count" class="tabular-nums">0</span>/8)</h2>
+              <button onclick="clearParlay()" class="text-xs font-medium hover:underline" style="color: var(--form-loss);">Hapus Semua</button>
+            </div>
+            <div id="sim-legs-list" class="space-y-2 text-xs" style="color: var(--text-muted);">
+              Data belum dipilih. Tambahkan pasar dari tabel jadwal atau form di bawah.
+            </div>
+          </div>
+
+          <div class="surface-box p-4 space-y-3">
+            <h3 class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-muted);">Tambah Pasar Cepat</h3>
+            <div class="grid gap-2 sm:grid-cols-3">
+              <select id="quick-match" aria-label="Pilih Pertandingan" class="elevated-box px-2.5 py-2 text-xs"></select>
+              <select id="quick-market" aria-label="Pilih Pasar" class="elevated-box px-2.5 py-2 text-xs">
+                <option value="home">Menang Kandang (1)</option>
+                <option value="draw">Seri (X)</option>
+                <option value="away">Menang Tandang (2)</option>
+                <option value="over25">Over 2.5 Gol</option>
+                <option value="under25">Under 2.5 Gol</option>
+                <option value="btts">BTTS Ya</option>
+              </select>
+              <button onclick="addQuickLeg()" class="btn-primary px-3 py-2 text-xs font-semibold">Tambah Pasar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="surface-box p-4 space-y-3 h-fit">
+          <h2 class="text-sm font-semibold border-b pb-2" style="border-color: var(--border-subtle);">Hasil Analisis Kombinasi</h2>
+          <div id="sim-result" class="space-y-2.5 text-xs" style="color: var(--text-muted);">
+            Pilih minimal <strong>2 pasar</strong> untuk menghitung probabilitas gabungan.
+          </div>
+          <button onclick="saveSimulation()" id="btn-save-sim" class="hidden btn-primary w-full px-3 py-2 text-xs font-semibold">
+            Simpan Simulasi
+          </button>
+        </div>
+      </div>
+
+      <div class="surface-box p-4 space-y-3">
+        <h2 class="text-sm font-semibold">Riwayat Simulasi Tersimpan</h2>
+        <div id="sim-history-list" class="space-y-2 text-xs" style="color: var(--text-muted);">Memuat data...</div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: RIWAYAT & AKURASI -->
+    <section id="view-history" class="hidden space-y-4">
+      <div>
+        <h1 class="text-lg font-bold tracking-tight">Riwayat Prediksi vs Hasil Aktual</h1>
+        <p class="text-xs" style="color: var(--text-muted);">Evaluasi performa historis model pada pertandingan berstatus selesai.</p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="surface-box p-4">
+          <div class="text-xs font-medium" style="color: var(--text-muted);">Akurasi Keseluruhan (1X2)</div>
+          <div id="hist-overall-acc" class="mt-2 text-3xl font-bold tabular-nums" style="color: var(--accent);">--%</div>
+          <div id="hist-total-eval" class="mt-1 text-xs tabular-nums" style="color: var(--text-muted);">0 laga dievaluasi</div>
+        </div>
+        <div class="md:col-span-2 surface-box p-4">
+          <div class="text-xs font-medium mb-2" style="color: var(--text-muted);">Akurasi per Liga (%)</div>
+          <div class="h-44"><canvas id="chart-league-acc"></canvas></div>
+        </div>
+      </div>
+
+      <div class="surface-box overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b text-[11px] uppercase tracking-wider" style="border-color: var(--border-subtle); color: var(--text-muted);">
+                <th class="sticky-th px-3 py-2.5 font-semibold">Liga</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold">Pertandingan</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Prediksi</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Aktual</th>
+                <th class="sticky-th px-3 py-2.5 font-semibold text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody id="hist-table-body" class="divide-y tabular-nums" style="border-color: var(--border-subtle);"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 5B: METODOLOGI & KETERBATASAN -->
+    <section id="view-methodology" class="hidden space-y-4">
+      <div class="border-b pb-3" style="border-color: var(--border-subtle);">
+        <h1 class="text-lg font-bold tracking-tight">Metodologi Model &amp; Keterbatasan</h1>
+        <p class="text-xs" style="color: var(--text-muted);">Versi Model Aktif: <strong style="color: var(--accent);">dixon-coles-elo-v2-calibrated</strong></p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="surface-box p-4 space-y-2.5 text-xs leading-relaxed" style="color: var(--text-secondary);">
+          <h2 class="text-sm font-semibold" style="color: var(--text-primary);">1. Arsitektur Matematis</h2>
+          <p><strong>Dixon-Coles Bivariate Poisson:</strong> Memodelkan distribusi skor (0–8 gol) dengan penyesuaian korelasi skor rendah (0-0, 1-0, 0-1, 1-1) untuk menghasilkan probabilitas 1X2, Over/Under 2.5, dan BTTS.</p>
+          <p><strong>Rating Elo Dinamis:</strong> Menyesuaikan ekspektasi kekuatan tim kandang dan tandang (+65 poin keuntungan kandang) yang diperbarui setelah laga selesai.</p>
+          <p><strong>Kalibrasi Probabilitas:</strong> Menggunakan <em>temperature scaling</em> pada ruang log agar probabilitas prediksi selaras dengan frekuensi hasil aktual.</p>
+        </div>
+
+        <div class="surface-box p-4 space-y-2.5 text-xs leading-relaxed" style="color: var(--text-secondary);">
+          <h2 class="text-sm font-semibold" style="color: var(--text-primary);">2. Fitur Kontekstual &amp; Backtest</h2>
+          <ul class="list-disc pl-4 space-y-1">
+            <li><strong>Kekuatan Jadwal (SoS):</strong> Rata-rata rating Elo lawan pada 8 laga terakhir sebelum tanggal pertandingan.</li>
+            <li><strong>Hari Istirahat:</strong> Jarak hari sejak pertandingan sebelumnya untuk mendeteksi kelelahan jadwal padat (&lt; 3 hari).</li>
+            <li><strong>Bobot Form Terbaru:</strong> Peluruhan eksponensial (<em>exponential decay</em>) hasil 8 laga terakhir.</li>
+            <li><strong>Dampak Cedera:</strong> Penyesuaian kekuatan berdasarkan laporan pemain absen atau diragukan.</li>
+            <li><strong>Backtest Walk-Forward:</strong> Evaluasi kronologis tanpa kebocoran data masa depan (diukur via Akurasi 1X2, Brier Score, Log Loss, dan Kalibrasi).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="surface-box p-4 space-y-2 text-xs leading-relaxed" style="color: var(--text-secondary);">
+        <h2 class="text-sm font-semibold" style="color: var(--text-primary);">3. Keterbatasan Model</h2>
+        <p>Model statistik ini hanya mengolah data historis kuantitatif. Faktor non-kuantitatif seperti perubahan taktik mendadak, motivasi turnamen, rotasi skuad di menit akhir, cuaca ekstrem, dan keputusan wasit tidak dapat sepenuhnya ditangkap oleh angka. Hasil prediksi bersifat edukatif dan tidak menjamin hasil pertandingan.</p>
+      </div>
+    </section>
+
+    <!-- VIEW 6: DESIGN SYSTEM -->
+    <section id="view-design-system" class="hidden space-y-6">
+      <div class="border-b pb-3" style="border-color: var(--border-subtle);">
+        <h1 class="text-lg font-bold tracking-tight">Design System — Football Analytics Hub</h1>
+        <p class="text-xs" style="color: var(--text-muted);">Standar tipografi, token warna Light &amp; Dark mode (WCAG AA), jarak 4/8px, dan komponen status.</p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="surface-box p-4 space-y-3">
+          <h2 class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-muted);">Token Warna &amp; Semantik</h2>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="elevated-box p-2.5 flex items-center gap-2"><span class="h-5 w-5 rounded border" style="background: var(--bg-canvas); border-color: var(--border-subtle);"></span><span>Canvas</span></div>
+            <div class="elevated-box p-2.5 flex items-center gap-2"><span class="h-5 w-5 rounded" style="background: var(--accent);"></span><span>Aksen Utama</span></div>
+            <div class="elevated-box p-2.5 flex items-center gap-2"><span class="h-5 w-5 rounded" style="background: var(--form-win);"></span><span>Form Menang (W)</span></div>
+            <div class="elevated-box p-2.5 flex items-center gap-2"><span class="h-5 w-5 rounded" style="background: var(--form-draw);"></span><span>Form Seri (D)</span></div>
+            <div class="elevated-box p-2.5 flex items-center gap-2"><span class="h-5 w-5 rounded" style="background: var(--form-loss);"></span><span>Form Kalah (L)</span></div>
+          </div>
+        </div>
+
+        <div class="surface-box p-4 space-y-3">
+          <h2 class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-muted);">Tipografi &amp; Tabular Nums</h2>
+          <div class="space-y-2">
+            <div class="text-lg font-bold">IBM Plex Sans — Judul Utama (18px)</div>
+            <div class="text-sm font-semibold">Subheading Tabel &amp; Seksi (14px)</div>
+            <div class="text-xs tabular-nums" style="color: var(--text-secondary);">Angka Tabular: 01:45 WIB | 2 - 1 | 58.4% / 23.1% / 18.5%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="surface-box p-4 space-y-3">
+        <h2 class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-muted);">Komponen Status &amp; Badge Form</h2>
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+          <span class="inline-flex h-6 w-6 items-center justify-center rounded font-bold text-white" style="background: var(--form-win);">M</span>
+          <span class="inline-flex h-6 w-6 items-center justify-center rounded font-bold text-white" style="background: var(--form-draw);">S</span>
+          <span class="inline-flex h-6 w-6 items-center justify-center rounded font-bold text-white" style="background: var(--form-loss);">K</span>
+          <button class="btn-primary px-3 py-1.5 text-xs font-semibold">Tombol Aksi Utama</button>
+          <button class="btn-ghost px-3 py-1.5 text-xs font-semibold">Tombol Sekunder</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Mandatory Footer Disclaimer -->
+  <footer class="border-t py-5" style="background-color: var(--bg-surface); border-color: var(--border-subtle);">
+    <div class="mx-auto max-w-7xl space-y-2.5 px-4">
+      <div class="rounded-md border px-3 py-2.5 text-xs leading-relaxed" style="background-color: var(--warn-bg); border-color: var(--warn-border); color: var(--warn-text);">
+        <strong>Peringatan &amp; Disclaimer:</strong> Prediksi berbasis statistik dan tidak menjamin hasil. Aplikasi ini bukan ajakan untuk berjudi. Perjudian dilarang di Indonesia.
+      </div>
+      <p class="text-center text-[11px]" style="color: var(--text-muted);">
+        Football Analytics Hub · Platform Edukasi &amp; Analisis Statistik Sepak Bola
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    const API_BASE = (location.protocol === "file:") ? "http://localhost:8000" : "";
+    let cachedMatches = [];
+    let parlayLegs = [];
+    let leagueChart = null;
+    let radarChart = null;
+
+    // Theme management (Light & Dark mode)
+    function applyTheme(theme) {
+      const html = document.documentElement;
+      if (theme === "light") html.classList.remove("dark");
+      else html.classList.add("dark");
+      localStorage.setItem("fah_theme", theme);
+    }
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains("dark");
+      applyTheme(isDark ? "light" : "dark");
+    }
+    applyTheme(localStorage.getItem("fah_theme") || "dark");
+
+    function switchTab(tab) {
+      ["dashboard", "standings", "detail", "simulator", "history", "methodology", "design-system"].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        if (view) view.classList.toggle("hidden", t !== tab);
+        const btn = document.getElementById(`tab-${t}`);
+        if (btn) {
+          const active = t === tab;
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+          btn.style.backgroundColor = active ? "var(--accent)" : "transparent";
+          btn.style.color = active ? "var(--accent-contrast)" : "var(--text-secondary)";
+        }
+      });
+      if (tab === "standings") loadStandings();
+      if (tab === "simulator") { renderSimulator(); loadSimHistory(); }
+      if (tab === "history") loadAccuracyHistory();
+    }
+
+    function teamBadgeHtml(team) {
+      const initials = (team.short_name || team.name || "?").slice(0, 3).toUpperCase();
+      if (team.crest_url) {
+        return `<span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded overflow-hidden" style="background: var(--bg-elevated);"><img src="${team.crest_url}" alt="${team.short_name}" class="h-4 w-4 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" /><span class="hidden text-[9px] font-bold" style="color: var(--text-muted);">${initials}</span></span>`;
+      }
+      return `<span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] font-bold" style="background: var(--bg-elevated); color: var(--text-secondary);">${initials}</span>`;
+    }
+
+    function renderSkeletonRows(cols, count = 6) {
+      return Array.from({ length: count }).map(() => `
+        <tr>${Array.from({ length: cols }).map(() => `<td class="px-3 py-3"><div class="skeleton-line h-3.5 w-full"></div></td>`).join("")}</tr>
+      `).join("");
+    }
+
+    function resetFilters() {
+      document.getElementById("filter-league").value = "";
+      document.getElementById("filter-date").value = "";
+      loadMatches();
+    }
+
+    async function loadMatches() {
+      const tbody = document.getElementById("matches-tbody");
+      tbody.innerHTML = renderSkeletonRows(7, 6);
+
+      const league = document.getElementById("filter-league").value;
+      const dateVal = document.getElementById("filter-date").value;
+      const params = new URLSearchParams();
+      if (league) params.set("league", league);
+      if (dateVal) { params.set("date_from", dateVal); params.set("date_to", dateVal); }
+
+      try {
+        const res = await fetch(`${API_BASE}/matches?${params.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const matches = await res.json();
+        cachedMatches = matches;
+
+        const quickSel = document.getElementById("quick-match");
+        quickSel.innerHTML = matches.map(m =>
+          `<option value="${m.id}">${m.home_team.short_name} vs ${m.away_team.short_name} (${m.league_code})</option>`
+        ).join("");
+
+        if (!matches.length) {
+          tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-xs" style="color: var(--text-muted);">Data belum tersedia untuk filter yang dipilih.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = matches.map(m => {
+          const p = m.prediction;
+          const ph = p ? (p.prob_home * 100).toFixed(0) : null;
+          const pd = p ? (p.prob_draw * 100).toFixed(0) : null;
+          const pa = p ? (p.prob_away * 100).toFixed(0) : null;
+          const conf = p ? `${p.confidence_score.toFixed(0)}%` : "—";
+          const score = p ? `${p.predicted_home_score} - ${p.predicted_away_score}` : "—";
+          const dt = new Date(m.match_date).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+          const statusTag = m.status === "LIVE"
+            ? `<span class="ml-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style="background: var(--form-loss);">LIVE</span>`
+            : (m.status === "POSTPONED" || m.status === "CANCELLED"
+              ? `<span class="ml-1 rounded px-1.5 py-0.5 text-[10px] font-semibold" style="background: var(--warn-bg); color: var(--warn-text);">${m.status}</span>`
+              : "");
+
+          const probHtml = p ? `
+            <div class="min-w-[140px] space-y-1">
+              <div class="flex justify-between text-[11px] tabular-nums" style="color: var(--text-secondary);">
+                <span>${ph}%</span><span>${pd}%</span><span>${pa}%</span>
+              </div>
+              <div class="flex h-1.5 w-full overflow-hidden rounded-sm" style="background: var(--bg-elevated);">
+                <div style="width:${ph}%; background: var(--accent);"></div>
+                <div style="width:${pd}%; background: var(--text-muted);"></div>
+                <div style="width:${pa}%; background: var(--text-secondary);"></div>
+              </div>
+            </div>` : `<span style="color: var(--text-muted);">Data belum tersedia</span>`;
+
+          return `
+            <tr class="hover:opacity-95 transition">
+              <td class="px-3 py-2.5 whitespace-nowrap tabular-nums" style="color: var(--text-secondary);">${dt} WIB${statusTag}</td>
+              <td class="px-3 py-2.5 whitespace-nowrap"><span class="rounded px-1.5 py-0.5 text-[11px] font-semibold" style="background: var(--bg-elevated); color: var(--text-secondary);">${m.league_code}</span></td>
+              <td class="px-3 py-2.5">
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-1.5 font-medium">${teamBadgeHtml(m.home_team)}<span>${m.home_team.name}</span></div>
+                  <div class="flex items-center gap-1.5 font-medium">${teamBadgeHtml(m.away_team)}<span>${m.away_team.name}</span></div>
+                </div>
+              </td>
+              <td class="px-3 py-2.5">${probHtml}</td>
+              <td class="px-3 py-2.5 text-right font-semibold tabular-nums">${score}</td>
+              <td class="px-3 py-2.5 text-right tabular-nums" style="color: var(--text-secondary);">${conf}</td>
+              <td class="px-3 py-2.5 text-right whitespace-nowrap">
+                <div class="inline-flex gap-1.5">
+                  <button onclick="openDetail(${m.id})" class="btn-ghost px-2 py-1 text-[11px] font-medium">Detail</button>
+                  <button onclick="addMatchToParlay(${m.id}, 'home')" class="btn-primary px-2 py-1 text-[11px] font-medium">+ Sim</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      } catch (e) {
+        tbody.innerHTML = `
+          <tr><td colspan="7" class="px-4 py-8 text-center">
+            <div class="text-xs mb-2" style="color: var(--form-loss);">Gagal memuat data pertandingan (${e.message}).</div>
+            <button onclick="loadMatches()" class="btn-primary px-3 py-1.5 text-xs font-semibold">Coba Lagi</button>
+          </td></tr>`;
+      }
+    }
+
+    async function loadStandings() {
+      const tbody = document.getElementById("standings-tbody");
+      tbody.innerHTML = renderSkeletonRows(11, 8);
+      const league = document.getElementById("standings-league").value;
+      try {
+        const res = await fetch(`${API_BASE}/standings?league=${league}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center" style="color: var(--text-muted);">Data belum tersedia.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map(r => {
+          const formBadges = (r.recent_form || "").split("").slice(0, 5).map(ch => {
+            const bg = ch === "W" ? "var(--form-win)" : (ch === "D" ? "var(--form-draw)" : "var(--form-loss)");
+            const lbl = ch === "W" ? "M" : (ch === "D" ? "S" : "K");
+            return `<span class="inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] font-bold text-white" style="background:${bg};">${lbl}</span>`;
+          }).join("");
+          return `
+            <tr>
+              <td class="px-3 py-2 text-right font-semibold" style="color: var(--text-muted);">${r.position}</td>
+              <td class="px-3 py-2"><div class="flex items-center gap-2 font-medium">${teamBadgeHtml(r)}<span>${r.name}</span></div></td>
+              <td class="px-3 py-2 text-right">${r.played}</td>
+              <td class="px-3 py-2 text-right">${r.wins}</td>
+              <td class="px-3 py-2 text-right">${r.draws}</td>
+              <td class="px-3 py-2 text-right">${r.losses}</td>
+              <td class="px-3 py-2 text-right">${r.goals_for}:${r.goals_against}</td>
+              <td class="px-3 py-2 text-right">${r.goal_diff > 0 ? '+' + r.goal_diff : r.goal_diff}</td>
+              <td class="px-3 py-2 text-right font-bold" style="color: var(--accent);">${r.points}</td>
+              <td class="px-3 py-2 text-right" style="color: var(--text-secondary);">${r.elo_rating}</td>
+              <td class="px-3 py-2"><div class="flex gap-1">${formBadges || '<span style="color:var(--text-muted);">—</span>'}</div></td>
+            </tr>
+          `;
+        }).join("");
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center"><span style="color:var(--form-loss);">Gagal memuat klasemen.</span> <button onclick="loadStandings()" class="btn-primary ml-2 px-2.5 py-1 text-xs">Coba Lagi</button></td></tr>`;
+      }
+    }
+
+    async function openDetail(matchId) {
+      switchTab("detail");
+      const container = document.getElementById("detail-content");
+      container.innerHTML = `<div class="surface-box p-6 space-y-3"><div class="skeleton-line h-5 w-1/3"></div><div class="skeleton-line h-20 w-full"></div></div>`;
+
+      try {
+        const [mRes, pRes] = await Promise.all([
+          fetch(`${API_BASE}/matches/${matchId}`),
+          fetch(`${API_BASE}/predict/${matchId}`)
+        ]);
+        if (!mRes.ok || !pRes.ok) throw new Error("Gagal mengambil detail laga");
+        const m = await mRes.json();
+        const p = await pRes.json();
+
+        const hs = m.home_team.stats || {};
+        const as = m.away_team.stats || {};
+        const injHome = (m.injuries_json?.home || []).map(i => `<li>${i.player} — <span style="color:var(--form-draw);">${i.status}</span></li>`).join("") || `<li style="color:var(--text-muted);">Data belum tersedia</li>`;
+        const injAway = (m.injuries_json?.away || []).map(i => `<li>${i.player} — <span style="color:var(--form-draw);">${i.status}</span></li>`).join("") || `<li style="color:var(--text-muted);">Data belum tersedia</li>`;
+
+        const h2hHtml = (m.head_to_head || []).slice(0, 5).map(h =>
+          `<div class="flex justify-between text-xs py-1.5 border-b tabular-nums" style="border-color:var(--border-subtle);"><span>${h.home_team} vs ${h.away_team}</span><strong>${h.home_score} - ${h.away_score}</strong></div>`
+        ).join("") || `<div class="text-xs" style="color:var(--text-muted);">Data belum tersedia.</div>`;
+
+        const formHtml = (arr) => arr.length ? arr.slice(0, 8).map(r => {
+          const bg = r.result === "W" ? "var(--form-win)" : (r.result === "D" ? "var(--form-draw)" : "var(--form-loss)");
+          const lbl = r.result === "W" ? "M" : (r.result === "D" ? "S" : "K");
+          return `<span title="${r.opponent} (${r.goals_for}-${r.goals_against})" class="inline-flex h-6 w-6 items-center justify-center rounded-sm text-[11px] font-bold text-white" style="background:${bg};">${lbl}</span>`;
+        }).join(" ") : `<span class="text-xs" style="color:var(--text-muted);">Data belum tersedia</span>`;
+
+        container.innerHTML = `
+          <div class="surface-box p-5 space-y-4">
+            <div class="text-xs font-semibold" style="color: var(--accent);">${m.league_name} · ${m.venue || "Stadion belum tersedia"}</div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold">${m.home_team.name} vs ${m.away_team.name}</h2>
+                <p class="text-xs mt-1 tabular-nums" style="color: var(--text-muted);">Rating Elo: ${m.home_team.elo_rating.toFixed(0)} vs ${m.away_team.elo_rating.toFixed(0)}</p>
+              </div>
+              <div class="elevated-box px-4 py-2 text-center">
+                <div class="text-[11px]" style="color: var(--text-muted);">Skor Paling Mungkin</div>
+                <div class="text-2xl font-bold tabular-nums">${p.predicted_home_score} - ${p.predicted_away_score}</div>
+              </div>
+            </div>
+            <p class="elevated-box p-3 text-xs leading-relaxed" style="color: var(--text-secondary);">
+              <strong>Dasar Prediksi Model:</strong> ${p.explanation_text}
+            </p>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center tabular-nums">
+              <div class="elevated-box p-3"><div class="text-[11px]" style="color:var(--text-muted);">Menang Kandang</div><div class="text-base font-bold" style="color:var(--accent);">${(p.prob_home*100).toFixed(1)}%</div></div>
+              <div class="elevated-box p-3"><div class="text-[11px]" style="color:var(--text-muted);">Seri</div><div class="text-base font-bold">${(p.prob_draw*100).toFixed(1)}%</div></div>
+              <div class="elevated-box p-3"><div class="text-[11px]" style="color:var(--text-muted);">Over 2.5 Gol</div><div class="text-base font-bold">${(p.prob_over_25*100).toFixed(1)}%</div></div>
+              <div class="elevated-box p-3"><div class="text-[11px]" style="color:var(--text-muted);">BTTS (Ya)</div><div class="text-base font-bold">${(p.prob_btts_yes*100).toFixed(1)}%</div></div>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="surface-box p-5 space-y-3">
+              <h3 class="text-sm font-semibold">Radar Perbandingan Statistik</h3>
+              <div class="h-60"><canvas id="chart-radar"></canvas></div>
+            </div>
+            <div class="surface-box p-5 space-y-4">
+              <h3 class="text-sm font-semibold">Form Laga Terakhir &amp; Head-to-Head</h3>
+              <div>
+                <div class="text-xs mb-1" style="color:var(--text-muted);">${m.home_team.name} (Kandang)</div>
+                <div class="flex flex-wrap gap-1">${formHtml(m.home_recent_matches || [])}</div>
+              </div>
+              <div>
+                <div class="text-xs mb-1" style="color:var(--text-muted);">${m.away_team.name} (Tandang)</div>
+                <div class="flex flex-wrap gap-1">${formHtml(m.away_recent_matches || [])}</div>
+              </div>
+              <div>
+                <div class="text-xs mb-1" style="color:var(--text-muted);">Head-to-Head</div>
+                ${h2hHtml}
+              </div>
+              <div class="grid grid-cols-2 gap-3 pt-2 border-t text-xs" style="border-color:var(--border-subtle);">
+                <div><div class="mb-1" style="color:var(--text-muted);">Cedera ${m.home_team.short_name}</div><ul class="space-y-1">${injHome}</ul></div>
+                <div><div class="mb-1" style="color:var(--text-muted);">Cedera ${m.away_team.short_name}</div><ul class="space-y-1">${injAway}</ul></div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        if (radarChart) radarChart.destroy();
+        radarChart = new Chart(document.getElementById("chart-radar"), {
+          type: "radar",
+          data: {
+            labels: ["xG/Laga", "Tembakan", "Penguasaan (%)", "Serangan", "Pertahanan"],
+            datasets: [
+              {
+                label: m.home_team.short_name,
+                data: [(hs.xg_for_avg || 1.3)*10, hs.shots_avg || 12, hs.possession_avg || 50, (hs.home_attack_strength || 1)*15, (2 - (hs.home_defense_strength || 1))*15],
+                borderColor: "#3b82f6",
+                backgroundColor: "rgba(59,130,246,0.2)"
+              },
+              {
+                label: m.away_team.short_name,
+                data: [(as.xg_for_avg || 1.2)*10, as.shots_avg || 11, as.possession_avg || 48, (as.away_attack_strength || 1)*15, (2 - (as.away_defense_strength || 1))*15],
+                borderColor: "#64748b",
+                backgroundColor: "rgba(100,116,139,0.2)"
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { r: { grid: { color: "#334155" }, angleLines: { color: "#334155" }, pointLabels: { color: "#94a3b8" }, ticks: { display: false } } },
+            plugins: { legend: { labels: { color: "#94a3b8" } } }
+          }
+        });
+      } catch (e) {
+        container.innerHTML = `<div class="surface-box p-6 text-center text-xs"><p style="color:var(--form-loss);">Gagal memuat detail pertandingan.</p><button onclick="openDetail(${matchId})" class="btn-primary mt-2 px-3 py-1.5">Coba Lagi</button></div>`;
+      }
+    }
+
+    function addMatchToParlay(matchId, marketKey) {
+      const m = cachedMatches.find(x => x.id === Number(matchId));
+      if (!m || !m.prediction) return;
+      if (parlayLegs.length >= 8) { alert("Maksimal 8 pasar dalam satu simulasi."); return; }
+      const p = m.prediction;
+      const map = {
+        home: { label: `${m.home_team.short_name} Menang (1)`, prob: p.prob_home },
+        draw: { label: "Seri (X)", prob: p.prob_draw },
+        away: { label: `${m.away_team.short_name} Menang (2)`, prob: p.prob_away },
+        over25: { label: "Over 2.5 Gol", prob: p.prob_over_25 },
+        under25: { label: "Under 2.5 Gol", prob: p.prob_under_25 },
+        btts: { label: "BTTS (Ya)", prob: p.prob_btts_yes },
+      };
+      const chosen = map[marketKey];
+      parlayLegs.push({ match_id: m.id, match_label: `${m.home_team.short_name} vs ${m.away_team.short_name}`, market: chosen.label, probability: chosen.prob, manual_odds: null });
+      document.getElementById("parlay-count").textContent = parlayLegs.length;
+      switchTab("simulator");
+    }
+
+    function addQuickLeg() {
+      addMatchToParlay(document.getElementById("quick-match").value, document.getElementById("quick-market").value);
+    }
+
+    function clearParlay() {
+      parlayLegs = [];
+      document.getElementById("parlay-count").textContent = "0";
+      renderSimulator();
+    }
+
+    function removeLeg(idx) {
+      parlayLegs.splice(idx, 1);
+      document.getElementById("parlay-count").textContent = parlayLegs.length;
+      renderSimulator();
+    }
+
+    function updateLegOdds(idx, val) {
+      const num = parseFloat(val);
+      parlayLegs[idx].manual_odds = (!isNaN(num) && num > 1.0) ? num : null;
+      calculateParlayServer();
+    }
+
+    function renderSimulator() {
+      document.getElementById("sim-leg-count").textContent = parlayLegs.length;
+      const list = document.getElementById("sim-legs-list");
+      if (!parlayLegs.length) {
+        list.innerHTML = `Data belum dipilih. Tambahkan pasar dari tabel jadwal atau form di bawah.`;
+        document.getElementById("sim-result").innerHTML = `Pilih minimal <strong>2 pasar</strong> untuk menghitung probabilitas gabungan.`;
+        document.getElementById("btn-save-sim").classList.add("hidden");
+        return;
+      }
+      list.innerHTML = parlayLegs.map((l, idx) => `
+        <div class="elevated-box flex flex-wrap items-center justify-between gap-2 p-2.5">
+          <div>
+            <div class="font-semibold" style="color:var(--text-primary);">${l.match_label}</div>
+            <div class="text-[11px] tabular-nums" style="color:var(--accent);">${l.market} · Peluang ${(l.probability * 100).toFixed(1)}%</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" step="0.01" min="1.01" placeholder="Odds (opsional)" value="${l.manual_odds ?? ''}" onchange="updateLegOdds(${idx}, this.value)" class="surface-box w-28 px-2 py-1 text-xs tabular-nums" />
+            <button onclick="removeLeg(${idx})" class="text-xs hover:underline" style="color:var(--form-loss);">Hapus</button>
+          </div>
+        </div>
+      `).join("");
+      calculateParlayServer();
+    }
+
+    async function calculateParlayServer() {
+      const box = document.getElementById("sim-result");
+      const btnSave = document.getElementById("btn-save-sim");
+      if (parlayLegs.length < 2) {
+        box.innerHTML = `Tambahkan minimal <strong>${2 - parlayLegs.length} pasar lagi</strong> (2–8 pasar).`;
+        btnSave.classList.add("hidden");
+        return;
+      }
+      const res = await fetch(`${API_BASE}/simulator/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: `Simulasi ${parlayLegs.length} Leg`, legs: parlayLegs })
+      });
+      const data = await res.json();
+      const riskBg = data.risk_level === "rendah" ? "var(--form-win)" : (data.risk_level === "sedang" ? "var(--form-draw)" : "var(--form-loss)");
+
+      box.innerHTML = `
+        <div class="flex justify-between tabular-nums"><span>Jumlah Leg:</span><strong>${data.leg_count}</strong></div>
+        <div class="flex justify-between tabular-nums"><span>Probabilitas Gabungan:</span><strong style="color:var(--accent);">${data.combined_probability_pct}%</strong></div>
+        <div class="flex justify-between"><span>Indikator Risiko:</span><span class="rounded px-2 py-0.5 text-[10px] uppercase font-bold text-white" style="background:${riskBg};">${data.risk_level}</span></div>
+        ${data.combined_odds ? `<div class="flex justify-between tabular-nums"><span>Odds Gabungan:</span><strong>${data.combined_odds}x</strong></div>` : ""}
+        ${data.expected_value !== null ? `<div class="flex justify-between tabular-nums"><span>Expected Value (EV):</span><strong style="color:${data.expected_value >= 0 ? 'var(--form-win)' : 'var(--form-loss)'};">${(data.expected_value * 100).toFixed(2)}%</strong></div>` : ""}
+        <div class="elevated-box p-2.5 text-[11px] leading-relaxed" style="color:var(--text-secondary);">${data.correlation_note}</div>
+      `;
+      btnSave.classList.remove("hidden");
+    }
+
+    async function saveSimulation() {
+      await fetch(`${API_BASE}/simulator/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: `Simulasi ${parlayLegs.length} Leg`, legs: parlayLegs })
+      });
+      loadSimHistory();
+    }
+
+    async function loadSimHistory() {
+      const el = document.getElementById("sim-history-list");
+      try {
+        const res = await fetch(`${API_BASE}/simulator/history`);
+        const rows = await res.json();
+        if (!rows.length) { el.innerHTML = "Data belum tersedia."; return; }
+        el.innerHTML = rows.map(r => `
+          <div class="elevated-box flex flex-wrap justify-between gap-2 p-2.5 tabular-nums">
+            <span><strong>${r.title}</strong> (${r.legs.length} leg)</span>
+            <span>Peluang: <strong style="color:var(--accent);">${(r.combined_probability*100).toFixed(2)}%</strong> · Risiko: <strong class="uppercase">${r.risk_level}</strong></span>
+          </div>
+        `).join("");
+      } catch { el.innerHTML = "Gagal memuat riwayat simulasi."; }
+    }
+
+    async function loadAccuracyHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/history/accuracy`);
+        const data = await res.json();
+        document.getElementById("hist-overall-acc").textContent = `${data.overall_accuracy_pct}%`;
+        document.getElementById("hist-total-eval").textContent = `${data.total_evaluated} laga selesai dievaluasi`;
+
+        const tbody = document.getElementById("hist-table-body");
+        tbody.innerHTML = data.recent_results.map(r => `
+          <tr>
+            <td class="px-3 py-2" style="color:var(--text-muted);">${r.league_code}</td>
+            <td class="px-3 py-2 font-medium">${r.home_team} vs ${r.away_team}</td>
+            <td class="px-3 py-2 text-right">${r.predicted_score} (${r.predicted_1x2})</td>
+            <td class="px-3 py-2 text-right font-semibold">${r.actual_score} (${r.actual_1x2})</td>
+            <td class="px-3 py-2 text-right font-semibold" style="color:${r.is_correct ? 'var(--form-win)' : 'var(--form-loss)'};">${r.is_correct ? 'Tepat' : 'Meleset'}</td>
+          </tr>
+        `).join("");
+
+        if (leagueChart) leagueChart.destroy();
+        leagueChart = new Chart(document.getElementById("chart-league-acc"), {
+          type: "bar",
+          data: {
+            labels: data.by_league.map(l => l.league),
+            datasets: [{ label: "Akurasi (%)", data: data.by_league.map(l => l.accuracy_pct), backgroundColor: "#3b82f6", borderRadius: 4 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { min: 0, max: 100, grid: { color: "#334155" }, ticks: { color: "#94a3b8" } },
+              x: { grid: { display: false }, ticks: { color: "#94a3b8" } }
+            },
+            plugins: { legend: { display: false } }
+          }
+        });
+      } catch {}
+    }
+
+    async function checkSyncStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        const data = await res.json();
+        const st = data.sync_status || {};
+        const bar = document.getElementById("sync-status-bar");
+        if (st.data_delayed) {
+          bar.style.backgroundColor = "var(--warn-bg)";
+          bar.style.borderColor = "var(--warn-border)";
+          bar.style.color = "var(--warn-text)";
+          bar.innerHTML = `<span><strong>Data mungkin tertunda</strong> (sumber: ${st.source || "-"}). Menampilkan data valid terakhir.</span><span class="tabular-nums">${st.last_sync_age_minutes ?? 0} menit lalu</span>`;
+          bar.classList.remove("hidden");
+        } else if (st.last_sync_at) {
+          bar.style.backgroundColor = "var(--bg-surface)";
+          bar.style.borderColor = "var(--border-subtle)";
+          bar.style.color = "var(--text-muted)";
+          bar.innerHTML = `<span>Sumber data: <strong>${st.source}</strong> · Status: Normal</span><span class="tabular-nums">Diperbarui ${st.last_sync_age_minutes ?? 0} menit lalu</span>`;
+          bar.classList.remove("hidden");
+        }
+      } catch {}
+    }
+
+    function connectSSE() {
+      try {
+        const es = new EventSource(`${API_BASE}/events/stream`);
+        es.addEventListener("update", () => {
+          loadMatches();
+          checkSyncStatus();
+        });
+      } catch {}
+    }
+
+    loadMatches();
+    checkSyncStatus();
+    connectSSE();
+    setInterval(checkSyncStatus, 60000);
+  </script>
+</body>
+</html>
