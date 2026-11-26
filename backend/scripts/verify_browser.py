@@ -51,7 +51,15 @@ def run_browser_checks() -> None:
                 is_dark = page.evaluate("document.documentElement.classList.contains('dark')")
                 assert is_dark is False, "Light mode gagal aktif"
                 page.click("#btn-theme")
-                print("[OK] Semua tab, detail laga, simulator 2-leg, dan toggle Light/Dark terverifikasi!")
+
+                # Cek tombol Sinkronkan Data
+                page.click("#tab-dashboard")
+                page.click("#btn-sync-now")
+                page.wait_for_function(
+                    "document.getElementById('sync-status-bar').innerText.includes('Sinkronisasi selesai')",
+                    timeout=25000,
+                )
+                print("[OK] Semua tab, detail laga, simulator 2-leg, tombol Sinkronkan Data, dan toggle Light/Dark terverifikasi!")
 
             page.close()
         browser.close()
