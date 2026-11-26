@@ -6,11 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import Base, SessionLocal, cache, engine, get_db
 from app.models import SyncLog, Team
 from app.routers import history, matches, predict, simulator
 from app.services.events import event_bus
 from app.services.ingestion import get_sync_status, sync_league_data
+from app.worker import create_scheduler
 
 STATIC_INDEX = Path(__file__).resolve().parent / "static" / "index.html"
 
@@ -24,7 +26,16 @@ async def lifespan(app: FastAPI):
             sync_league_data(db, job_type="startup_seed")
     finally:
         db.close()
-    yield
+
+    scheduler = None
+    if settings.ENABLE_EMBEDDED_WORKER:
+        scheduler = create_scheduler()
+        scheduler.start()
+    try:
+        yield
+    finally:
+        if scheduler is not None:
+            scheduler.shutdown(wait=False)
 
 
 app = FastAPI(

@@ -46,3 +46,7 @@ def test_health_and_matches_endpoints():
         s_rows = standings.json()
         assert len(s_rows) > 0
         assert s_rows[0]["position"] == 1
+
+        sync_resp = client.post("/ingest/sync")
+        assert sync_resp.status_code == 200
+        assert sync_resp.json()["status"] in ("success", "partial", "not_modified")

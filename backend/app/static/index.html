@@ -171,6 +171,10 @@
           </select>
           <input type="date" id="filter-date" aria-label="Filter Tanggal" onchange="loadMatches()" class="elevated-box px-2.5 py-1.5 text-xs font-medium tabular-nums" />
           <button onclick="resetFilters()" class="btn-ghost px-2.5 py-1.5 text-xs font-medium">Reset</button>
+          <button onclick="triggerManualSync()" id="btn-sync-now" class="btn-primary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold">
+            <svg id="icon-sync" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            <span id="btn-sync-label">Sinkronkan Data</span>
+          </button>
         </div>
       </div>
 
@@ -867,6 +871,50 @@
           }
         });
       } catch {}
+    }
+
+    async function triggerManualSync() {
+      const btn = document.getElementById("btn-sync-now");
+      const lbl = document.getElementById("btn-sync-label");
+      const icon = document.getElementById("icon-sync");
+      const bar = document.getElementById("sync-status-bar");
+      if (btn) btn.disabled = true;
+      if (lbl) lbl.textContent = "Menyinkronkan...";
+      if (icon) icon.classList.add("animate-spin");
+
+      try {
+        const res = await fetch(`${API_BASE}/ingest/sync`, { method: "POST" });
+        const data = await res.json();
+        await Promise.all([loadMatches(), checkSyncStatus()]);
+        if (!document.getElementById("view-standings").classList.contains("hidden")) {
+          loadStandings();
+        }
+        if (data.status === "failed" || data.data_delayed) {
+          bar.style.backgroundColor = "var(--warn-bg)";
+          bar.style.borderColor = "var(--warn-border)";
+          bar.style.color = "var(--warn-text)";
+          bar.innerHTML = `<span><strong>Data mungkin tertunda:</strong> ${data.error || "Gagal menghubungi sumber eksternal"}</span><span>Tetap memakai data valid terakhir</span>`;
+          bar.classList.remove("hidden");
+        } else if (bar) {
+          bar.style.backgroundColor = "var(--bg-surface)";
+          bar.style.borderColor = "var(--border-subtle)";
+          bar.style.color = "var(--text-secondary)";
+          bar.innerHTML = `<span>Sinkronisasi selesai dari <strong>${data.provider}</strong>: ${data.teams_upserted} tim, ${data.matches_upserted} laga diperbarui.</span><span class="tabular-nums">Baru saja</span>`;
+          bar.classList.remove("hidden");
+        }
+      } catch (e) {
+        if (bar) {
+          bar.style.backgroundColor = "var(--warn-bg)";
+          bar.style.borderColor = "var(--warn-border)";
+          bar.style.color = "var(--warn-text)";
+          bar.textContent = "Gagal menyinkronkan data: " + e.message;
+          bar.classList.remove("hidden");
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (lbl) lbl.textContent = "Sinkronkan Data";
+        if (icon) icon.classList.remove("animate-spin");
+      }
     }
 
     async function checkSyncStatus() {

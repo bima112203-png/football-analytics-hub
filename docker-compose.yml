@@ -40,6 +40,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://fah_user:fah_password@postgres:5432/football_analytics
       REDIS_URL: redis://redis:6379/0
+      ENABLE_EMBEDDED_WORKER: "false"
     ports:
       - "8000:8000"
     depends_on:
@@ -61,6 +62,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://fah_user:fah_password@postgres:5432/football_analytics
       REDIS_URL: redis://redis:6379/0
+      ENABLE_EMBEDDED_WORKER: "false"
     depends_on:
       postgres:
         condition: service_healthy

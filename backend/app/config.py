@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "dev_secret_change_me"
     JWT_ALGORITHM: str = "HS256"
     GOOGLE_CLIENT_ID: str = ""
+    ENABLE_EMBEDDED_WORKER: bool = True
 
     NEXT_PUBLIC_API_URL: str = "http://localhost:8000"
 
