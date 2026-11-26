@@ -37,7 +37,7 @@ def sync_and_push_to_gsheet() -> dict:
         payload_items["matches"] = matches
         payload_items["accuracy"] = accuracy
 
-        for lg in ["PL", "PD", "SA", "BL1"]:
+        for lg in ["PL", "PD", "SA", "BL1", "FL1", "CL", "EL", "DED", "PPL", "ELC", "ID1", "TUR", "BRA", "USA", "JPN"]:
             payload_items[f"standings_{lg}"] = client.get(f"/standings?league={lg}").json()
 
         for m in matches:

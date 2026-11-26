@@ -7,14 +7,25 @@ from app.services.normalizer import normalize_status, normalize_team_name
 from app.services.resilience import CircuitBreaker, RateLimiter, ResilientHttpClient
 
 FOTMOB_LEAGUE_IDS = {
-    "PL": 47,
-    "PD": 87,
-    "SA": 55,
-    "BL1": 54,
+    "PL": 47,     # Premier League (Inggris)
+    "PD": 87,     # La Liga (Spanyol)
+    "SA": 55,     # Serie A (Italia)
+    "BL1": 54,    # Bundesliga (Jerman)
+    "FL1": 53,    # Ligue 1 (Prancis)
+    "CL": 42,     # UEFA Champions League
+    "EL": 73,     # UEFA Europa League
+    "DED": 57,    # Eredivisie (Belanda)
+    "PPL": 61,    # Liga Portugal
+    "ELC": 48,    # Championship (Inggris)
+    "ID1": 8983,  # Super League / Liga 1 (Indonesia)
+    "TUR": 71,    # Süper Lig (Turki)
+    "BRA": 268,   # Brasileirão Série A (Brasil)
+    "USA": 130,   # MLS (Amerika Serikat)
+    "JPN": 223,   # J1 League (Jepang)
 }
 
-_fotmob_limiter = RateLimiter(max_calls=15, period_seconds=60.0)
-_fotmob_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60.0)
+_fotmob_limiter = RateLimiter(max_calls=45, period_seconds=60.0)
+_fotmob_breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60.0)
 
 
 class FotMobAdapter(FootballDataProvider):
@@ -28,8 +39,8 @@ class FotMobAdapter(FootballDataProvider):
             rate_limiter=_fotmob_limiter,
             circuit_breaker=_fotmob_breaker,
             max_retries=2,
-            base_delay=0.5,
-            timeout=12.0,
+            base_delay=0.4,
+            timeout=15.0,
         )
         self._league_cache: dict[str, dict] = {}
         self.last_etag: Optional[str] = None
@@ -62,17 +73,38 @@ class FotMobAdapter(FootballDataProvider):
         self._league_cache[league_code] = data
         return data
 
+    def _extract_table_rows(self, data: dict) -> list[dict]:
+        table_list = data.get("table") or []
+        if not table_list:
+            return []
+        t_data = table_list[0].get("data", {})
+        # Format standar liga
+        rows = t_data.get("table", {}).get("all", [])
+        if rows:
+            return rows
+        # Format kompetisi grup / fase liga (CL, EL)
+        merged: list[dict] = []
+        for grp in t_data.get("tables", []):
+            merged.extend(grp.get("table", {}).get("all", []))
+        return merged
+
     def fetch_teams(self, league_code: str) -> list[RawTeam]:
         data = self._get_league_data(league_code)
         if not data:
             return []
 
-        table_rows = data.get("table", [{}])[0].get("data", {}).get("table", {}).get("all", [])
+        table_rows = self._extract_table_rows(data)
         if not table_rows:
-            raise ValueError(f"Tabel klasemen FotMob kosong untuk liga {league_code}")
+            return []
 
         teams: list[RawTeam] = []
+        seen_ids: set[str] = set()
         for row in table_rows:
+            ext_id = f"fm-{row['id']}"
+            if ext_id in seen_ids:
+                continue
+            seen_ids.add(ext_id)
+
             played = max(1, int(row.get("played") or 1))
             wins = int(row.get("wins") or 0)
             draws = int(row.get("draws") or 0)
@@ -93,7 +125,7 @@ class FotMobAdapter(FootballDataProvider):
             short = (row.get("shortName") or norm_name[:3]).upper()[:10]
             teams.append(
                 RawTeam(
-                    external_id=f"fm-{row['id']}",
+                    external_id=ext_id,
                     name=norm_name,
                     short_name=short,
                     league_code=league_code,
@@ -128,7 +160,7 @@ class FotMobAdapter(FootballDataProvider):
 
         all_matches = data.get("fixtures", {}).get("allMatches", [])
         if not isinstance(all_matches, list):
-            raise ValueError(f"Format fixtures FotMob tidak valid untuk liga {league_code}")
+            return []
 
         league_name = data.get("details", {}).get("name") or LEAGUE_NAMES.get(league_code, league_code)
         now = datetime.now(timezone.utc)

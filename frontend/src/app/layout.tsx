@@ -4,7 +4,7 @@ import "./globals.css";
 import { DisclaimerBanner } from "@/components/DisclaimerBanner";
 
 export const metadata: Metadata = {
-  title: "Football Analytics Hub",
+  title: "Formetric — Platform Analisis Statistik Sepak Bola",
   description: "Platform analisis statistik sepak bola & simulator kombinasi untuk edukasi.",
 };
 
@@ -14,9 +14,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col bg-[#090d16] text-gray-100 antialiased">
         <header className="sticky top-0 z-30 border-b border-gray-800 bg-[#090d16]/90 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-            <Link href="/" className="flex items-center gap-2 font-bold text-emerald-400">
-              <span>⚽</span>
-              <span>Football Analytics Hub</span>
+            <Link href="/" className="flex items-center gap-2 font-bold text-blue-500">
+              <span>Formetric</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm text-gray-300">
               <Link href="/" className="hover:text-white">Dashboard</Link>

@@ -15,7 +15,7 @@ from app.services.normalizer import ensure_utc_dt, normalize_league, normalize_s
 from app.services.resilience import ValidatedRawMatch, ValidatedRawTeam
 
 logger = get_logger("ingestion")
-DEFAULT_LEAGUES = ["PL", "PD", "SA", "BL1"]
+DEFAULT_LEAGUES = ["PL", "PD", "SA", "BL1", "FL1", "CL", "EL", "DED", "PPL", "ELC", "ID1", "TUR", "BRA", "USA", "JPN"]
 
 
 def sync_league_data(

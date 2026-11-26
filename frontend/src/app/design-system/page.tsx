@@ -2,7 +2,7 @@ export default function DesignSystemPage() {
   return (
     <div className="space-y-8">
       <div className="border-b border-[var(--border-subtle)] pb-4">
-        <h1 className="text-xl font-bold tracking-tight">Design System — Football Analytics Hub</h1>
+        <h1 className="text-xl font-bold tracking-tight">Design System — Formetric</h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
           Token tipografi (IBM Plex Sans + tabular-nums), palet netral dengan satu aksen tegas, dan komponen status.
         </p>

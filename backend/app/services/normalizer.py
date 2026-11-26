@@ -10,7 +10,17 @@ LEAGUE_CANONICAL = {
     "LL": "La Liga",
     "SA": "Serie A",
     "BL1": "Bundesliga",
+    "FL1": "Ligue 1",
     "CL": "UEFA Champions League",
+    "EL": "UEFA Europa League",
+    "DED": "Eredivisie",
+    "PPL": "Liga Portugal",
+    "ELC": "Championship",
+    "ID1": "BRI Liga 1 / Super League",
+    "TUR": "Süper Lig",
+    "BRA": "Brasileirão Série A",
+    "USA": "MLS",
+    "JPN": "J1 League",
 }
 
 TEAM_ALIASES = {

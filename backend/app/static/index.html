@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Football Analytics Hub — Platform Analisis Statistik Sepak Bola</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%232563eb'/><text x='16' y='21' font-size='13' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'>FAH</text></svg>" />
+  <title>Formetric — Platform Analisis Statistik Sepak Bola</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%232563eb'/><path d='M8 23V9h13v3.2H11.5v2.6h7.5V18h-7.5v5H8z' fill='white'/><rect x='20' y='19' width='2.6' height='4' rx='0.6' fill='%2393c5fd'/><rect x='23.5' y='15' width='2.6' height='8' rx='0.6' fill='white'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -126,9 +126,14 @@
   <header class="sticky top-0 z-30 border-b" style="background-color: var(--bg-surface); border-color: var(--border-subtle);">
     <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
       <div class="flex items-center gap-2.5">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-md font-bold text-xs tracking-tight" style="background-color: var(--accent); color: var(--accent-contrast);">FAH</span>
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="shrink-0">
+          <rect width="32" height="32" rx="6" fill="var(--accent)"/>
+          <path d="M7.5 23V9H20.5V12.2H11V14.8H18.5V18H11V23H7.5Z" fill="#ffffff"/>
+          <rect x="19.5" y="19" width="2.6" height="4" rx="0.6" fill="#bfdbfe"/>
+          <rect x="23.2" y="14.5" width="2.6" height="8.5" rx="0.6" fill="#ffffff"/>
+        </svg>
         <div>
-          <div class="text-sm font-bold leading-tight tracking-tight">Football Analytics Hub</div>
+          <div class="text-sm font-bold leading-tight tracking-tight">Formetric</div>
           <div class="text-[11px]" style="color: var(--text-muted);">Statistik &amp; Model Prediksi</div>
         </div>
       </div>
@@ -163,11 +168,22 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <select id="filter-league" aria-label="Filter Liga" onchange="loadMatches()" class="elevated-box px-2.5 py-1.5 text-xs font-medium">
-            <option value="">Semua Liga</option>
+            <option value="">Semua Liga (15 Liga)</option>
             <option value="PL">Premier League (PL)</option>
             <option value="PD">La Liga (PD)</option>
             <option value="SA">Serie A (SA)</option>
             <option value="BL1">Bundesliga (BL1)</option>
+            <option value="FL1">Ligue 1 (FL1)</option>
+            <option value="CL">UEFA Champions League (CL)</option>
+            <option value="EL">UEFA Europa League (EL)</option>
+            <option value="DED">Eredivisie (DED)</option>
+            <option value="PPL">Liga Portugal (PPL)</option>
+            <option value="ELC">Championship (ELC)</option>
+            <option value="ID1">Super League Indonesia (ID1)</option>
+            <option value="TUR">Süper Lig (TUR)</option>
+            <option value="BRA">Brasileirão Série A (BRA)</option>
+            <option value="USA">MLS (USA)</option>
+            <option value="JPN">J1 League (JPN)</option>
           </select>
           <input type="date" id="filter-date" aria-label="Filter Tanggal" onchange="loadMatches()" class="elevated-box px-2.5 py-1.5 text-xs font-medium tabular-nums" />
           <button onclick="resetFilters()" class="btn-ghost px-2.5 py-1.5 text-xs font-medium">Reset</button>
@@ -210,6 +226,17 @@
           <option value="PD">La Liga (PD)</option>
           <option value="SA">Serie A (SA)</option>
           <option value="BL1">Bundesliga (BL1)</option>
+          <option value="FL1">Ligue 1 (FL1)</option>
+          <option value="CL">UEFA Champions League (CL)</option>
+          <option value="EL">UEFA Europa League (EL)</option>
+          <option value="DED">Eredivisie (DED)</option>
+          <option value="PPL">Liga Portugal (PPL)</option>
+          <option value="ELC">Championship (ELC)</option>
+          <option value="ID1">Super League Indonesia (ID1)</option>
+          <option value="TUR">Süper Lig (TUR)</option>
+          <option value="BRA">Brasileirão Série A (BRA)</option>
+          <option value="USA">MLS (USA)</option>
+          <option value="JPN">J1 League (JPN)</option>
         </select>
       </div>
 
@@ -376,7 +403,7 @@
     <!-- VIEW 6: DESIGN SYSTEM -->
     <section id="view-design-system" class="hidden space-y-6">
       <div class="border-b pb-3" style="border-color: var(--border-subtle);">
-        <h1 class="text-lg font-bold tracking-tight">Design System — Football Analytics Hub</h1>
+        <h1 class="text-lg font-bold tracking-tight">Design System — Formetric</h1>
         <p class="text-xs" style="color: var(--text-muted);">Standar tipografi, token warna Light &amp; Dark mode (WCAG AA), jarak 4/8px, dan komponen status.</p>
       </div>
 
@@ -422,7 +449,7 @@
         <strong>Peringatan &amp; Disclaimer:</strong> Prediksi berbasis statistik dan tidak menjamin hasil. Aplikasi ini bukan ajakan untuk berjudi. Perjudian dilarang di Indonesia.
       </div>
       <p class="text-center text-[11px]" style="color: var(--text-muted);">
-        Football Analytics Hub · Platform Edukasi &amp; Analisis Statistik Sepak Bola
+        Formetric · Platform Edukasi &amp; Analisis Statistik Sepak Bola
       </p>
     </div>
   </footer>

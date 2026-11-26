@@ -160,7 +160,7 @@ def build() -> Path:
             detail = client.get(f"/matches/{m['id']}").json()
             (DETAILS_DIR / f"{m['id']}.json").write_text(json.dumps(detail, ensure_ascii=False), encoding="utf-8")
 
-        for lg in ["PL", "PD", "SA", "BL1"]:
+        for lg in ["PL", "PD", "SA", "BL1", "FL1", "CL", "EL", "DED", "PPL", "ELC", "ID1", "TUR", "BRA", "USA", "JPN"]:
             st = client.get(f"/standings?league={lg}").json()
             (DATA_DIR / f"standings_{lg}.json").write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
 

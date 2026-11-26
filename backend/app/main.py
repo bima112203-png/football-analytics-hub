@@ -39,9 +39,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Football Analytics Hub API",
+    title="Formetric API",
     description="Platform analisis statistik sepak bola & simulator kombinasi berbasis model matematis.",
-    version="1.1.0",
+    version="1.2.0",
     lifespan=lifespan,
 )
 
